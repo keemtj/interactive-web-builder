@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230f1114'/><path d='M4 3v10M4 8h5M12 3v10' stroke='%23ffb454' stroke-width='1.6' fill='none'/></svg>" />
+    <title>PREVIZ — Interaction Builder</title>
+    <script>
+      /* FOUC 방지 — React 마운트 전 테마 적용 (라이트 디폴트) */
+      document.documentElement.dataset.theme =
+        localStorage.getItem('previz.theme') || 'light';
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

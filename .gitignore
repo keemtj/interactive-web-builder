@@ -1,0 +1,9 @@
+node_modules
+dist
+.omc/
+.playwright-mcp/
+
+# private — ideation & skills
+docs/
+.claude/
+README.md
