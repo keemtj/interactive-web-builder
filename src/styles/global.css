@@ -1,0 +1,887 @@
+/* ==========================================================================
+   PREVIZ — Apple 디자인 언어 (PRD D5)
+   근거: .claude/skills/apple-design, emil-design-eng
+   - UI 는 시스템 폰트, 데이터/수치만 모노스페이스
+   - 헤어라인 보더 + 소프트 레이어드 섀도, 과한 자간 금지
+   - 피드백은 pointer-down 에서 즉시, 전환은 강한 ease-out ≤300ms
+   - 고빈도 조작(스크럽·드래그)은 무애니메이션 1:1
+   ========================================================================== */
+
+:root {
+  /* 서피스 — Apple light */
+  --bg: #f5f5f7;
+  --panel: #ffffff;
+  --panel2: #fafafc;
+  --line: rgba(0, 0, 0, 0.08);
+  --line-soft: rgba(0, 0, 0, 0.05);
+  --ink: #1d1d1f;
+  --dim: #6e6e73;
+  --faint: #aeaeb2;
+  --stage: #e8e8ed;
+  --stage2: #f0f0f3;
+  --frame: #ffffff;
+  --cell: #ffffff;
+  --map-line: rgba(0, 0, 0, 0.12);
+  --map-path: rgba(0, 0, 0, 0.22);
+  --overlay: rgba(255, 255, 255, 0.72);
+
+  /* 액센트 — 기능색 (데이터 색상은 콘티 JSON 이 소유) */
+  --accent: #0071e3;
+  --accent-weak: rgba(0, 113, 227, 0.12);
+  --blue: #2f7cd6;
+  --amber: #c9861e;
+  --teal: #0f9c86;
+  --pin: #e04f78;
+  --vio: #7d5fd9;
+  --glow-amber: rgba(201, 134, 30, 0.35);
+  --pin-weak: rgba(224, 79, 120, 0.07);
+  --amber-weak: rgba(201, 134, 30, 0.1);
+
+  /* 깊이 */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --shadow-frame:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    0 24px 48px -16px rgba(0, 0, 0, 0.14);
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+  /* 모션 토큰 (emil: 강한 커브, 300ms 이하) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --t-press: 120ms;
+  --t-hover: 160ms;
+  --t-panel: 240ms;
+
+  /* 타이포 */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+    system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+:root[data-theme='dark'] {
+  --bg: #161617;
+  --panel: #1d1d1f;
+  --panel2: #232326;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --ink: #f5f5f7;
+  --dim: #98989d;
+  --faint: #636366;
+  --stage: #0d0d0e;
+  --stage2: #131315;
+  --frame: #1c1c1e;
+  --cell: #1c1c1e;
+  --map-line: rgba(255, 255, 255, 0.14);
+  --map-path: rgba(255, 255, 255, 0.26);
+  --overlay: rgba(28, 28, 30, 0.72);
+
+  --accent: #0a84ff;
+  --accent-weak: rgba(10, 132, 255, 0.18);
+  --blue: #5fb4ff;
+  --amber: #ffb454;
+  --teal: #35e0c4;
+  --pin: #ff6b8a;
+  --vio: #b9a4ff;
+  --glow-amber: rgba(255, 180, 84, 0.5);
+  --pin-weak: rgba(255, 107, 138, 0.08);
+  --amber-weak: rgba(255, 180, 84, 0.1);
+
+  --shadow-frame:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 24px 48px -16px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 컨트롤 공통 — 피드백은 press 에 산다 ---------- */
+button {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition:
+    transform var(--t-press) var(--ease-out),
+    background-color var(--t-hover) ease,
+    border-color var(--t-hover) ease,
+    color var(--t-hover) ease;
+}
+button:hover:not(:disabled) {
+  background: var(--line-soft);
+  color: var(--ink);
+}
+button:active:not(:disabled) { transform: scale(0.96); }
+button:disabled { opacity: 0.35; cursor: default; }
+
+select {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: var(--r-sm);
+  transition: border-color var(--t-hover) ease;
+}
+select:hover { border-color: var(--faint); }
+
+input, select, button { outline: none; }
+input:focus-visible, select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-weak);
+}
+button:focus-visible { box-shadow: 0 0 0 3px var(--accent-weak); }
+
+/* ---------- app frame ---------- */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.app-header {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.app-header b { color: var(--dim); font-weight: 500; }
+.app-header .toolbar {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.app-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+.col:last-child { border-right: none; }
+.col > h3 {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--panel);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: none;
+}
+.app-footer {
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 8px 16px;
+  display: flex;
+  gap: 16px;
+  font-size: 10px;
+  color: var(--dim);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.app-footer .v { color: var(--ink); font-family: var(--font-mono); font-weight: 600; }
+.app-footer .p { color: var(--pin); font-family: var(--font-mono); }
+
+/* ---------- preview (주인공) ---------- */
+.preview-col { flex: 1; min-width: 0; }
+.pv-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pv-head .pv-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* 세그먼티드 컨트롤 (src/ui/SegmentedControl) — Apple 스타일 */
+.ui-seg {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--line-soft);
+  border-radius: 7px;
+  padding: 2px;
+}
+.ui-seg button {
+  font-size: 9px;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 5px;
+  color: var(--dim);
+}
+.ui-seg button:hover:not(.on) { background: transparent; color: var(--ink); }
+.ui-seg button.on {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow-thumb);
+}
+.pv-devices {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pv-dim {
+  margin-left: 8px;
+  font-size: 9px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+}
+
+.pv-stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--stage);
+  display: grid;
+  place-items: center;
+}
+.pv-frame-fit { position: relative; }
+.preview-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: top left;
+  overflow: hidden;
+  background: var(--frame);
+  border-radius: 12px;
+  box-shadow: var(--shadow-frame);
+  container-type: size;
+}
+.pv-world { position: absolute; left: 0; top: 0; will-change: transform; }
+.pv-cell {
+  position: absolute;
+  overflow: hidden;
+  background: var(--cell);
+  border: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pv-cell .eb {
+  position: absolute; top: 14px; left: 16px;
+  font-size: 9px; font-weight: 500; letter-spacing: 0.14em; color: var(--faint);
+}
+.pv-cell .ghost {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(26px, 6cqw, 52px);
+  opacity: 0.1;
+}
+.pv-cellspace {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pv-imgbox {
+  position: absolute; top: 30%; left: 50%;
+  width: 110px; height: 82px;
+  border: 1.5px solid var(--teal); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; letter-spacing: 0.1em; color: var(--teal);
+}
+.pv-imgbox::after {
+  content: ''; position: absolute; inset: 8px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, currentColor 14%, transparent) 0 2px,
+    transparent 2px 10px);
+}
+.pv-word {
+  position: absolute; left: 50%; top: 46%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+.pv-word span {
+  display: inline-block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(22px, 5cqw, 40px);
+  letter-spacing: -0.01em;
+}
+.pv-word-badge {
+  position: absolute; left: 50%; top: calc(46% + 34px);
+  transform: translateX(-50%);
+  font-size: 9px; font-weight: 500; letter-spacing: 0.12em;
+}
+.pv-sig { position: absolute; left: 12%; right: 12%; top: 32%; height: 36%; }
+.pv-sig path { fill: none; stroke-width: 2; stroke-linecap: round; }
+
+/* ---------- v0.3 바디 프리미티브 — 덩어리는 5종, 생명은 트윈이 분다 ---------- */
+.pv-boxel {
+  position: absolute;
+  width: 110px; height: 82px;
+  border: 1.5px solid; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; letter-spacing: 0.1em;
+  will-change: transform, opacity;
+}
+.pv-boxel::after {
+  content: ''; position: absolute; inset: 8px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, currentColor 14%, transparent) 0 2px,
+    transparent 2px 10px);
+}
+.pv-textel {
+  position: absolute;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(22px, 5cqw, 40px);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--ink);
+  will-change: transform, opacity;
+}
+.pv-textel span { display: inline-block; }
+.pv-lineel {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  will-change: opacity;
+}
+.pv-orbel {
+  position: absolute;
+  width: 60px; height: 60px;
+  display: grid; place-items: center;
+  will-change: transform, opacity;
+}
+.pv-orbcore {
+  position: absolute;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.pv-orbel.loop-float .pv-orbcore { animation: pv-float 3.2s var(--ease-in-out) infinite; }
+.pv-orbel.loop-spin .pv-orbcore { border-radius: 12px; animation: pv-spin 6s linear infinite; }
+.pv-ring {
+  position: absolute;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: pv-pulse 2.4s ease-out infinite;
+}
+.pv-boxel.loop-spin { animation: pv-spin 6s linear infinite; }
+.pv-bandel {
+  position: absolute; left: 0; right: 0;
+  height: 48px;
+  display: block; overflow: hidden;
+  will-change: opacity;
+}
+.pv-mq { display: block; width: 100%; overflow: hidden; white-space: nowrap; }
+.pv-mq > span {
+  display: inline-block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 30px;
+  opacity: 0.45;
+  animation: pv-marquee 9s linear infinite;
+}
+.pv-gradfill {
+  position: absolute; inset: 4px 8%;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    color-mix(in srgb, currentColor 22%, transparent) 50%,
+    transparent 80%);
+  background-size: 200% 100%;
+  animation: pv-grad 3.6s var(--ease-in-out) infinite;
+}
+.pv-frameel {
+  position: absolute; top: 14px; right: 14px; z-index: 6;
+  font-size: 9px; font-weight: 500; letter-spacing: 0.1em;
+  border: 1px solid; border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--overlay);
+  backdrop-filter: blur(12px) saturate(180%);
+  will-change: transform, opacity;
+}
+.tl-inf {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8px; pointer-events: none;
+}
+.inspector .tw-editor {
+  margin: 6px 0;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm);
+}
+
+/* travel 배치 — 페이지 공간 from→to 이동 (셀 감옥 해방, PRD D12) */
+.pv-travelbox {
+  position: absolute;
+  width: 110px; height: 82px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; letter-spacing: 0.1em;
+  will-change: left, top;
+}
+.pv-travelbox::after {
+  content: ''; position: absolute; inset: 8px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, currentColor 14%, transparent) 0 2px,
+    transparent 2px 10px);
+}
+.pv-traveldraw {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ∞ anim — 시간 기반 무한 루프 (스크롤 비종속). 그레이박스 오브 + 펄스 링 */
+.pv-anim {
+  position: absolute; right: 18%; top: 24%;
+  width: 90px; height: 90px;
+  display: grid; place-items: center;
+}
+.pv-anim-orb {
+  position: absolute;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  animation: pv-float 3.2s var(--ease-in-out) infinite;
+}
+.pv-anim-ring {
+  position: absolute;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: pv-pulse 2.4s ease-out infinite;
+}
+.pv-anim-label {
+  position: absolute; bottom: -16px;
+  font-size: 8px; font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+@keyframes pv-float {
+  0%, 100% { transform: translateY(-7px); }
+  50% { transform: translateY(7px); }
+}
+@keyframes pv-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* anim variant: spin — 회전 아웃라인 */
+.pv-anim-spin {
+  position: absolute;
+  width: 42px; height: 42px;
+  border: 1.5px solid currentColor;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  animation: pv-spin 6s linear infinite;
+}
+@keyframes pv-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* anim variant: marquee — 무한 흐르는 텍스트 띠 */
+.pv-anim.v-marquee {
+  left: 0; right: 0; top: auto; bottom: 14%;
+  width: auto; height: 48px;
+  display: block; overflow: hidden;
+}
+.pv-anim.v-marquee .pv-anim-label { left: 16px; bottom: -14px; }
+.pv-anim-marquee {
+  display: block; width: 100%;
+  overflow: hidden; white-space: nowrap;
+}
+.pv-anim-marquee > span {
+  display: inline-block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 30px;
+  opacity: 0.45;
+  animation: pv-marquee 9s linear infinite;
+}
+@keyframes pv-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* anim variant: gradient — 흐르는 그라디언트 밴드 */
+.pv-anim.v-gradient {
+  left: 12%; right: 12%; top: 28%;
+  width: auto; height: 110px;
+}
+.pv-anim-grad {
+  position: absolute; inset: 0;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    color-mix(in srgb, currentColor 22%, transparent) 50%,
+    transparent 80%);
+  background-size: 200% 100%;
+  animation: pv-grad 3.6s var(--ease-in-out) infinite;
+}
+@keyframes pv-grad {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+.pv-sticky {
+  position: absolute; right: 14px; z-index: 6;
+  font-size: 9px; font-weight: 500; letter-spacing: 0.1em;
+  border: 1px solid; border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--overlay);
+  backdrop-filter: blur(12px) saturate(180%);
+}
+.pv-live {
+  position: absolute; left: 12px; bottom: 12px; z-index: 5;
+  font-size: 10px; line-height: 1.8; color: var(--dim);
+  background: var(--overlay);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--line-soft);
+  padding: 8px 12px; border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  cursor: pointer;
+  max-width: calc(100% - 24px);
+  transition: padding var(--t-hover) var(--ease-out);
+}
+.pv-live.min { padding: 4px 9px; line-height: 1.4; }
+.pv-live .v { color: var(--ink); font-family: var(--font-mono); }
+.pv-live .p { color: var(--pin); font-family: var(--font-mono); }
+
+/* ---------- timeline (스크롤 공간) ---------- */
+.timeline-col {
+  flex: none;
+  position: relative;
+  min-width: 160px;
+}
+.tl-lanehead {
+  display: flex;
+  flex: none;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--panel);
+}
+.tl-lanehead .tag {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  padding: 5px 1px;
+  font-size: 7.5px; font-family: var(--font-mono);
+  color: var(--faint); letter-spacing: 0.02em; line-height: 1.5;
+  border-right: 1px solid var(--line-soft);
+}
+.tl-lanehead .tag:last-child { border-right: none; }
+.tl-scroll {
+  flex: 1; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+}
+.tl-scroll.fit { overflow-y: hidden; }
+.tl-secband {
+  position: absolute; left: 0; right: 0;
+  background: var(--pin-weak);
+  z-index: 0; pointer-events: none;
+}
+.tl-lanes {
+  position: relative; display: flex;
+  min-height: 100%;
+  background: var(--panel);
+  cursor: ns-resize;
+  touch-action: none;
+}
+.tl-zoomctl {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 3px;
+}
+.tl-zoomctl button { font-size: 8px; padding: 1px 6px; border: none; }
+.tl-zoomctl button:hover:not(:disabled) { background: var(--line-soft); }
+.tl-lane { flex: 1; position: relative; border-right: 1px solid var(--line-soft); }
+.tl-lane:last-child { border-right: none; }
+.tl-secline {
+  position: absolute; left: 0; right: 0;
+  border-top: 1px dashed var(--line-soft);
+  z-index: 0; pointer-events: none;
+}
+.tl-secline span {
+  position: absolute; right: 4px; top: 2px;
+  font-size: 7px; font-family: var(--font-mono);
+  color: var(--faint); letter-spacing: 0.04em;
+}
+.tl-seghit {
+  position: absolute; left: 0; right: 0;
+}
+.tl-seghit .tl-camseg { top: 0; bottom: 0; }
+.tl-seghit .tl-camhold { top: 2px; bottom: 2px; }
+.tl-rangebar {
+  position: absolute; left: 30%; right: 30%; border-radius: 3px;
+  cursor: grab;
+  touch-action: none;
+}
+.tl-rangebar:active { cursor: grabbing; }
+.tl-rangebar.sel {
+  z-index: 4;
+  box-shadow: 0 0 0 1.5px currentColor;
+}
+.tl-rangebar.dragging {
+  z-index: 6;
+  box-shadow: 0 0 10px color-mix(in srgb, currentColor 55%, transparent);
+}
+.tl-hedge {
+  position: absolute; left: -4px; right: -4px; height: 7px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.tl-hedge.top { top: -3px; }
+.tl-hedge.bot { bottom: -3px; }
+.tl-kf {
+  position: absolute;
+  width: 5px; height: 5px; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: none;
+}
+.tl-camseg {
+  position: absolute; left: 46%; width: 2px;
+  background: var(--blue); opacity: 0.5;
+  border-radius: 1px;
+}
+.tl-camhold {
+  position: absolute; left: 20%; right: 20%;
+  border: 1px dashed var(--pin); border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg, var(--pin-weak) 0 4px, transparent 4px 8px);
+  cursor: grab;
+}
+.tl-camhold:active { cursor: grabbing; }
+.tl-camhold i {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  font-style: normal; font-size: 7px; font-family: var(--font-mono);
+  color: var(--pin); letter-spacing: 0.12em; white-space: nowrap;
+  pointer-events: none;
+}
+.tl-holdhandle {
+  position: absolute; left: -4px; right: -4px; bottom: -4px; height: 9px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.tl-holdhandle::after {
+  content: ''; position: absolute; left: 32%; right: 32%; top: 3px;
+  height: 3px; border-radius: 2px; background: var(--pin); opacity: 0.7;
+}
+.tl-latch {
+  position: absolute; left: 50%; transform: translate(-50%, -50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1px solid var(--amber); background: transparent;
+  pointer-events: none;
+  transition: background-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
+}
+.tl-latch.on { background: var(--amber); box-shadow: 0 0 8px var(--glow-amber); }
+.tl-playhead {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--glow-amber);
+  z-index: 6; pointer-events: none;
+}
+.tl-playhead::before {
+  content: ''; position: absolute; left: -1px; top: -4px;
+  border: 4px solid transparent; border-left: 6px solid var(--amber);
+}
+
+/* ---------- side panel: unfolded map (오버뷰) + inspector ---------- */
+.map-col {
+  flex: none;
+  position: relative;
+  min-width: 230px;
+}
+.col-resizer {
+  position: absolute; left: -3px; top: 0; bottom: 0;
+  width: 6px; z-index: 10;
+  cursor: ew-resize;
+  touch-action: none;
+  transition: background-color var(--t-hover) ease;
+}
+.col-resizer:hover { background: var(--accent-weak); }
+.umap {
+  flex: 0 0 42%; min-height: 150px;
+  position: relative;
+  background: var(--stage2); cursor: crosshair;
+  touch-action: none;
+  border-bottom: 1px solid var(--line);
+}
+.umap svg { width: 100%; height: 100%; display: block; }
+.umap-marker { cursor: grab; }
+.umap-marker:active { cursor: grabbing; }
+.umap-end { cursor: grab; }
+.umap-end:active { cursor: grabbing; }
+.umap-enddot {
+  fill: var(--panel);
+  stroke: var(--accent);
+  stroke-dasharray: 2 2;
+}
+.umap-end text { fill: var(--accent); }
+.umap-node {
+  fill: var(--panel);
+  stroke: var(--map-path);
+  cursor: grab;
+  transition: stroke var(--t-hover) ease;
+}
+.umap-node:hover { stroke: var(--accent); }
+.umap-node:active { cursor: grabbing; }
+.umap-ghost line {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  stroke-linecap: round;
+}
+.umap-ghost circle { fill: var(--accent-weak); stroke: var(--accent); }
+.umap-ghost text {
+  fill: var(--accent);
+  font-size: 7px;
+  font-family: var(--font-mono);
+}
+
+.inspector {
+  flex: 1; min-height: 0;
+  background: var(--panel2);
+  padding: 12px 14px 14px;
+  overflow: auto;
+}
+.inspector h4 {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--dim);
+  margin: 14px 0 8px;
+}
+.inspector h4:first-child { margin-top: 0; }
+.inspector .row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.inspector .row.el,
+.inspector .row.seg {
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  border-left: 2px solid transparent;
+  transition: background-color var(--t-hover) ease;
+}
+.inspector .row.el:hover,
+.inspector .row.seg:hover { background: var(--line-soft); }
+.inspector .row.el.sel,
+.inspector .row.seg.sel { background: var(--accent-weak); border-left-color: var(--accent); }
+.inspector input[type='color'] {
+  width: 36px; height: 22px; padding: 1px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-sm); cursor: pointer;
+}
+.inspector .row .win {
+  margin-left: auto;
+  font-size: 9px; font-family: var(--font-mono);
+  color: var(--faint);
+}
+.inspector .row.actions { margin-top: 6px; }
+.inspector label { font-size: 11px; color: var(--dim); flex: none; min-width: 56px; }
+.inspector .chip {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+}
+.inspector .unit { font-size: 9px; color: var(--faint); }
+.inspector .hint { font-size: 10px; color: var(--faint); }
+.inspector .val { font-size: 11px; color: var(--ink); }
+.inspector .x {
+  padding: 1px 7px; font-size: 11px; line-height: 1.4; border: none;
+}
+.inspector .x:hover:not(:disabled) { background: var(--pin-weak); color: var(--pin); }
+.inspector .mini {
+  padding: 1px 6px; font-size: 8px; line-height: 1.5; flex: none;
+}
+.inspector input[type='number'] {
+  width: 60px; background: var(--panel); border: 1px solid var(--line);
+  color: var(--ink); font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 7px; border-radius: var(--r-sm);
+  transition: border-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
+}
+.inspector input[type='text'] {
+  flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line);
+  color: var(--ink); font: inherit; font-size: 11px;
+  padding: 4px 7px; border-radius: var(--r-sm);
+  transition: border-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
+}
+.inspector .el-editor {
+  margin: 8px 0 4px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.inspector details { margin-top: 12px; }
+.inspector summary {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--dim); cursor: pointer;
+}
+.inspector pre {
+  margin-top: 8px; font-size: 9.5px; line-height: 1.6;
+  font-family: var(--font-mono);
+  color: var(--dim); max-height: 200px; overflow: auto;
+  background: var(--panel); border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm); padding: 10px;
+  user-select: text;
+}
+
+/* ---------- 접근성 — 모션·투명도 축소 (apple-design §14) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .pv-live, .pv-sticky {
+    background: var(--panel);
+    backdrop-filter: none;
+  }
+}
